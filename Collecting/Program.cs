@@ -6,7 +6,7 @@ using System.Threading;
 
 class Program
 {
-    async Task Main()
+    async static Task Main()
     {
         dynamic json = JsonConvert.DeserializeObject(File.ReadAllText("config.json"));
         int times = json.times;
@@ -37,10 +37,11 @@ class Program
             }
             string responseString = await response.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(responseString);
-            string jsonEeg = JsonConvert.SerializeObject((string)data["eeg"]);
-            largeJson[i] = jsonEeg;
+            largeJson[i] = data["eeg"];
+            Console.WriteLine(data["eeg"]);
+            Console.WriteLine("Completed");
         }
-        string serializedJson = JsonConvert.SerializeObject(largeJson);
+        string serializedJson = JsonConvert.SerializeObject(largeJson, Formatting.Indented);
         File.WriteAllText(Path.Combine(path, className, $"{className}.json"), serializedJson);
     }
 }
