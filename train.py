@@ -1,3 +1,4 @@
+import os
 import json
 import pandas as pd
 import joblib
@@ -6,25 +7,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
+classes: dict = {}
 
-with open("Classes/Cappybarra/Cappybarra.json") as f:
-    cappy = json.load(f)
+folders = os.listdir("Classes")
+for folder in folders:
+    path = os.path.join("Classes", folder)
+    if os.path.isdir(path):
+        with open(os.path.join(path, f"{folder}.json")) as f:
+            classes[folder] = json.load(f)
 
-with open("Classes/Cat/Cat.json") as f:
-    cat = json.load(f)
+dfs = []
+for class_name, data in classes.items():
+    df = pd.DataFrame(data)
+    df["label"] = class_name
+    dfs.append(df)
 
-with open("Classes/Dog/Dog.json") as f:
-    dog = json.load(f)
-
-df_cappy = pd.DataFrame(cappy)
-df_cat = pd.DataFrame(cat)
-df_dog = pd.DataFrame(dog)
-
-df_cappy["label"] = "cappybara"
-df_cat["label"] = "cat"
-df_dog["label"] = "dog"
-
-df = pd.concat([df_cappy, df_cat, df_dog], ignore_index=True)
+df = pd.concat(dfs, ignore_index=True)
+print(df)
 
 x = df.drop(columns=["label"])
 y = df["label"]
