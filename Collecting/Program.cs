@@ -10,6 +10,7 @@ class Program
     {
         dynamic json = JsonConvert.DeserializeObject(File.ReadAllText("config.json"));
         int times = json.times;
+        int rest = json.rest;
         string className = json.className;
         string path = json.path;
         
@@ -23,9 +24,9 @@ class Program
         
         for (int i = 0; i < times; i++)
         {
-            for (int j = 0; j < 5; j++)
+            for (int j = 0; j < rest; j++)
             {
-                Console.WriteLine("Get ready in " + (5-j));
+                Console.WriteLine("Get ready in " + (rest-j));
                 Thread.Sleep(1000);
             }
 
