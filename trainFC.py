@@ -6,11 +6,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
+import sys
+
+ignore = sys.argv[1:]
 
 classes: dict = {}
 
 folders = os.listdir("Classes")
 for folder in folders:
+    if folder in ignore:
+        continue
     path = os.path.join("Classes", folder)
     if os.path.isdir(path):
         with open(os.path.join(path, f"{folder}.json")) as f:
