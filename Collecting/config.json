@@ -2,5 +2,6 @@
   "times" : 100,
   "rest" : 5,
   "path" : "/home/siddhant/source/repos/paralysis-aid/Classes/",
-  "className" : "Name"
+  "className" : "Name",
+  "isMerge" : true
 }
