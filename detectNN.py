@@ -1,30 +1,24 @@
 import json
+import joblib
 import requests
-from time import sleep
 import torch
-import numpy as np
+from time import sleep
 
-model = torch.load("models/thought_classifier.pth", weights_only=False)
+model = torch.load("models/modelNN.pth")
+scaler = joblib.load("models/scalerNN.pkl")
 
 url: str = "http://localhost:3000/mindwave/data"
-
-x_mean = np.load("models/X_mean.npy")
-x_std = np.load("models/X_std.npy")
 
 while True:
     response = requests.get(url)
     print(response.text)
-    chunk = json.load(response.text)["eeg"]
 
-    features = np.array([chunk["delta"], chunk["theta"], chunk["loAlpha"], chunk["hiAlpha"],
-                     chunk["loBeta"], chunk["hiBeta"], chunk["loGamma"], chunk["midGamma"]],
-                     dtype=np.float32)
-    features = (features - x_mean) / x_std
-    x_tensor = torch.tensor(features).unsqueeze(0)
+    new_data = [json.loads(response.text)["eeg"]]
+    new_data = [x for x in new_data.values()]
 
     with torch.no_grad():
-        outputs = model(x_tensor)
-        predicted_class = torch.argmax(outputs, dim=1).item()
-    
-    print(predicted_class)
-    sleep(0.1)
+        sample = torch.tensor([new_data], dtype=torch.float32)
+        sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
+        output = model(sample)
+        predicted_class = torch.argmax(output, dim=1).item()
+        print(f"Predicted class: {predicted_class}")

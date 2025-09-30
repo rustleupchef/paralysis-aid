@@ -1,60 +1,77 @@
+import json
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-import json, os
-import numpy as np
+from torch.utils.data import Dataset, DataLoader
+import joblib
+from sklearn.preprocessing import StandardScaler
 
-# --- Load data ---
-X, y = [], []
-classes = {"Cat": 0, "Dog": 1}
-base_path = "Classes"
+with open('Classes/Formatted/Formatted.json', 'r') as f:
+    data = json.load(f)
 
-for label, idx in classes.items():
-    file_path = os.path.join(base_path, label, f"{label}.json")
-    with open(file_path) as f:
-        data = json.load(f)
-    for row in data:
-        X.append([row[k] for k in row])
-        y.append(idx)
+x = [obj["features"] for obj in data]
+y = [obj["label"] for obj in data]
 
-X = np.array(X, dtype=np.float32)
-y = np.array(y, dtype=np.int64)
+scaler = StandardScaler()
+x = scaler.fit_transform(x)
 
-# Normalize
-X = (X - X.mean(axis=0)) / X.std(axis=0)
-np.save("models/X_mean.npy", X.mean(axis=0))
-np.save("models/X_std.npy", X.std(axis=0))
+X = torch.tensor(x, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.long)
 
-# Convert to tensors
-X = torch.tensor(X)
-y = torch.tensor(y)
-
-# --- Define model ---
-class Net(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = nn.Linear(X.shape[1], 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, len(classes))
-        self.relu = nn.ReLU()
+class TabularDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = X
+        self.y = y
+        
+    def __len__(self):
+        return len(self.X)
     
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+dataset = TabularDataset(X, y)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+class MLP(nn.Module):
+    def __init__(self, input_dim, num_classes):
+        super(MLP, self).__init__()
+        self.fc1 = nn.Linear(input_dim, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, num_classes)
+        
     def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        return self.fc3(x)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)  # no softmax here; use CrossEntropyLoss
+        return x
 
-model = Net()
+input_dim = X.shape[1]
+num_classes = len(set(y.tolist()))
+model = MLP(input_dim, num_classes)
+
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+epochs = 50
 
-# --- Train ---
-for epoch in range(50):
-    optimizer.zero_grad()
-    outputs = model(X)
-    loss = criterion(outputs, y)
-    loss.backward()
-    optimizer.step()
-    if epoch % 10 == 0:
-        print(f"Epoch {epoch}, Loss: {loss.item()}")
+for epoch in range(epochs):
+    running_loss = 0.0
+    for features, labels in dataloader:
+        optimizer.zero_grad()
+        outputs = model(features)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+        
+    print(f"Epoch {epoch+1}/{epochs}, Loss: {running_loss/len(dataloader):.4f}")
 
-torch.save(model, "models/thought_classifier.pth")
+torch.save(model, "models/modelNN.pth")
+joblib.dump(scaler, "models/scalerNN.pkl")
+
+with torch.no_grad():
+    sample = torch.tensor([[1573632, 8650752, 2555904, 15269888, 393216, 13238272, 14286848, 2490378]], dtype=torch.float32)
+    sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
+    output = model(sample)
+    predicted_class = torch.argmax(output, dim=1).item()
+    print("Predicted class:", predicted_class)

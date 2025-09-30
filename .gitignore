@@ -3,3 +3,4 @@ connect.sh
 Collecting/.idea
 Collecting/bin
 Collecting/obj
+__pycache__
