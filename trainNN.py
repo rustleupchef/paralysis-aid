@@ -68,10 +68,3 @@ for epoch in range(epochs):
 
 torch.save(model, "models/modelNN.pth")
 joblib.dump(scaler, "models/scalerNN.pkl")
-
-with torch.no_grad():
-    sample = torch.tensor([[1573632, 8650752, 2555904, 15269888, 393216, 13238272, 14286848, 2490378]], dtype=torch.float32)
-    sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
-    output = model(sample)
-    predicted_class = torch.argmax(output, dim=1).item()
-    print("Predicted class:", predicted_class)
