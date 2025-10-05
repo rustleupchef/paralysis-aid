@@ -41,3 +41,4 @@ while True:
         predicted_class = torch.argmax(output, dim=1).item()
         print(f"Predicted class: {predicted_class}")
         print(f"Class name: {class_key[str(predicted_class)]}")
+        sleep(1)
