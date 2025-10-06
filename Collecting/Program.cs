@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace Collecting;
 
@@ -11,15 +12,18 @@ class Program
         dynamic json = JsonConvert.DeserializeObject(File.ReadAllText("config.json"));
         int times = json.times;
         int rest = json.rest;
+        int divisions = json.divisions;
         string className = json.className;
         string path = json.path;
         bool isMerge = json.isMerge;
 
         if (isMerge)
         {
-            await mergeClasses(path);
+            await mergeClasses(path, divisions);
             return;
         }
+        
+        Process.Start( new ProcessStartInfo { FileName = "http://localhost:3000/collect", UseShellExecute = true });
 
         Directory.CreateDirectory(Path.Combine(path, className));
         
@@ -27,16 +31,25 @@ class Program
         HttpClient client = new HttpClient();
         client.BaseAddress = new Uri(url);
 
-        Object[] largeJson = new Object[times];
+        Object[,] largeJson = new Object[times, divisions];
         
         for (int i = 0; i < times; i++)
         {
-            for (int j = 0; j < rest; j++)
+            Object[] featuresList = await readSequence(divisions, rest, client, url);
+            for (int j = 0; j < featuresList.Length; j++)
             {
-                Console.WriteLine("Get ready in " + (rest-j));
-                Thread.Sleep(1000);
+                largeJson[i, j] = featuresList[j];
             }
+        }
+        string serializedJson = JsonConvert.SerializeObject(largeJson, Formatting.Indented);
+        File.WriteAllText(Path.Combine(path, className, $"{className}.json"), serializedJson);
+    }
 
+    async static Task<Object[]> readSequence(int divisions, int rest, HttpClient client, string url)
+    {
+        Object[] results = new Object[divisions];
+        for (int i = 0; i < divisions; i++)
+        {
             HttpResponseMessage response = await client.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
@@ -45,16 +58,20 @@ class Program
             }
             string responseString = await response.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(responseString);
-            largeJson[i] = data["eeg"];
-            Console.WriteLine(data["eeg"]);
-            Console.WriteLine("Completed");
+            results[i] = data["eeg"];
+            Thread.Sleep(rest * 1000 / divisions);
         }
-        string serializedJson = JsonConvert.SerializeObject(largeJson, Formatting.Indented);
-        File.WriteAllText(Path.Combine(path, className, $"{className}.json"), serializedJson);
+        return results;
     }
 
-    async static Task mergeClasses(string path)
+    async static Task mergeClasses(string path, int divisions)
     {
+        if (!Directory.Exists(path))
+        {
+            Console.WriteLine("Directory doesn't exist");
+            return;
+        }
+
         string[] folders = Directory.GetDirectories(path);
         List<string> files = new List<string>();
         for (int i = 0; i < folders.Length; i++)
@@ -69,15 +86,50 @@ class Program
         {
             dynamic json = JsonConvert.DeserializeObject(File.ReadAllText(files[_label]));
 
-            foreach (dynamic jsonObject in json)
+            if (divisions == 1)
             {
-                var payload = new
+                foreach (dynamic jsonObject in json)
                 {
-                    features = new Object[] {jsonObject.delta, jsonObject.theta, jsonObject.loAlpha, jsonObject.hiAlpha, jsonObject.loBeta, jsonObject.hiBeta, jsonObject.loGamma, jsonObject.midGamma},
-                    label = _label
-                };
-                objects.Add(payload);
+                    dynamic jsonObj = jsonObject[0];
+                    var payload = new
+                    {
+                        features = new Object[]
+                        {
+                            jsonObj.delta, jsonObj.theta, jsonObj.loAlpha, jsonObj.hiAlpha,
+                            jsonObj.loBeta, jsonObj.hiBeta, jsonObj.loGamma, jsonObj.midGamma
+                        },
+                        label = _label
+                    };
+                    objects.Add(payload);
+                }
             }
+            else
+            {
+                foreach (dynamic jsonObject in json)
+                {
+                    List<Object[]> _features = new List<Object[]>();
+                    foreach (dynamic jsonObj in jsonObject)
+                    {
+                        _features.Add(new Object[]
+                        {
+                            jsonObj.delta, jsonObj.theta, jsonObj.loAlpha, jsonObj.hiAlpha,
+                            jsonObj.loBeta, jsonObj.hiBeta, jsonObj.loGamma, jsonObj.midGamma
+                        });
+                    }
+
+                    var payload = new
+                    {
+                        features = _features,
+                        label = _label
+                    };
+                    objects.Add(payload);
+                }
+            }
+        }
+
+        if (!Directory.Exists(Path.Combine(path, "Formatted")))
+        {
+            Directory.CreateDirectory(Path.Combine(path, "Formatted"));
         }
 
         string text = JsonConvert.SerializeObject(objects, Formatting.Indented);
