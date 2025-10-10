@@ -19,7 +19,7 @@ class Program
 
         if (isMerge)
         {
-            await mergeClasses(path, divisions);
+            await mergeClasses(path, divisions, rest);
             return;
         }
         
@@ -64,7 +64,7 @@ class Program
         return results;
     }
 
-    async static Task mergeClasses(string path, int divisions)
+    async static Task mergeClasses(string path, int divisions, int rest)
     {
         if (!Directory.Exists(path))
         {
@@ -134,13 +134,18 @@ class Program
 
         string text = JsonConvert.SerializeObject(objects, Formatting.Indented);
         File.WriteAllText(Path.Combine(path, "Formatted", $"Formatted.json"), text);
-
+        
         Dictionary<string, string> key = new Dictionary<string, string>();
         for (int label = 0; label < files.Count; label++)
         {
             key.Add(label.ToString(), files[label].Substring(files[label].LastIndexOf("/") + 1, (files[label].Length - files[label].LastIndexOf("/")) - 6));
         }
-        text = JsonConvert.SerializeObject(key, Formatting.Indented);
-        File.WriteAllText(Path.Combine(path, "Formatted", $"ClassKey.json"), text);
+        
+        Dictionary<string, Object> entire = new Dictionary<string, Object>();
+        entire.Add("classes", key);
+        entire.Add("duration", rest);
+        entire.Add("divisions", divisions);
+        text = JsonConvert.SerializeObject(entire, Formatting.Indented);
+        File.WriteAllText(Path.Combine(path, "Formatted", $"Key.json"), text);
     }
 }
