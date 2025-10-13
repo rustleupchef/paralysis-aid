@@ -73,7 +73,7 @@ def grab(rest, divisions) -> list[any]:
     return responses
 
 while True:
-    response = grab(rest=duration, divisions=divisions + 1)
+    response = grab(rest=duration, divisions=divisions)
 
     if version:
         new_data = response[0]
