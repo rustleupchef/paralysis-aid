@@ -73,10 +73,10 @@ def grab(rest, divisions) -> list[any]:
     return responses
 
 while True:
-    response = grab(rest=duration, divisions=divisions)
+    response = grab(rest=duration, divisions=divisions + 1)
 
     if version:
-        new_data = json.loads(response[0].text)["eeg"]
+        new_data = response[0]
         new_data = [x for x in new_data.values()]
 
         with torch.no_grad():
