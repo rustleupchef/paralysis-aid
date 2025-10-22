@@ -94,6 +94,6 @@ while True:
         with torch.no_grad():
             sample = torch.tensor(new_data, dtype=torch.float32)
             output = model(sample)
-            predicted_class = torch.argmax(output, dim=1).item()
+            predicted_class = torch.argmax(output, dim=0).item()
             print(f"Predicted class: {predicted_class}")
             print(f"Class name: {class_key[str(predicted_class)]}")

@@ -17,8 +17,8 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(`<div style="display: flex; position: absolute; left: 0; top: 0; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column;"><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4><h4>${config.className}</h4></div>`);
   } else if (req.url === "/detect" && req.method === "GET") {
-    const classes = require("../Classes/Formatted/ClassKey.json");
-    const classArray = Object.values(classes);
+    const classes = require("../Classes/Formatted/Key.json");
+    const classArray = Object.values(classes.classes);
     let text = `<div style="display: flex; position: absolute; left: 0; top: 0; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column;">`;
     for (let i = 0; i < 10; i++) {
       let innerText = `<div style="display: flex; width: 100%; justify-content: center; align-items: center; flex-direction: row;">`;

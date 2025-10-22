@@ -24,6 +24,7 @@ class Program
         }
         
         Process.Start( new ProcessStartInfo { FileName = "http://localhost:3000/collect", UseShellExecute = true });
+        Thread.Sleep(5000);
 
         Directory.CreateDirectory(Path.Combine(path, className));
         
