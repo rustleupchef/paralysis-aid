@@ -5,7 +5,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from time import sleep
+from threading import Thread
 import sys
+import math
+import cv2 as cv
 
 if len(sys.argv) > 1:
     version: bool = sys.argv[1] == "0"
@@ -59,6 +62,8 @@ scaler = joblib.load("models/scalerNN.pkl")
 
 url: str = "http://localhost:3000/mindwave/data"
 
+running = True
+
 with open("Classes/Formatted/Key.json", "r") as f:
     key = json.load(f)
     class_key = key["classes"]
@@ -72,28 +77,78 @@ def grab(rest, divisions) -> list[any]:
         sleep(float(rest)/float(divisions))
     return responses
 
-while True:
-    response = grab(rest=duration, divisions=divisions)
+def eeg_detection():
+    while running:
+        response = grab(rest=duration, divisions=divisions)
 
-    if version:
-        new_data = response[0]
-        new_data = [x for x in new_data.values()]
+        if version:
+            new_data = response[0]
+            new_data = [x for x in new_data.values()]
 
-        with torch.no_grad():
-            sample = torch.tensor([new_data], dtype=torch.float32)
-            sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
-            output = model(sample)
-            predicted_class = torch.argmax(output, dim=1).item()
-            print(f"Predicted class: {predicted_class}")
-            print(f"Class name: {class_key[str(predicted_class)]}")
-            sleep(duration)
-    else:
-        print(response)
-        new_data = [[x for x in data.values()] for data in response]
-        print(new_data)
-        with torch.no_grad():
-            sample = torch.tensor(new_data, dtype=torch.float32)
-            output = model(sample)
-            predicted_class = torch.argmax(output, dim=0).item()
-            print(f"Predicted class: {predicted_class}")
-            print(f"Class name: {class_key[str(predicted_class)]}")
+            with torch.no_grad():
+                sample = torch.tensor([new_data], dtype=torch.float32)
+                sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
+                output = model(sample)
+                predicted_class = torch.argmax(output, dim=1).item()
+                print(f"Predicted class: {predicted_class}")
+                print(f"Class name: {class_key[str(predicted_class)]}")
+                sleep(duration)
+        else:
+            print(response)
+            new_data = [[x for x in data.values()] for data in response]
+            print(new_data)
+            with torch.no_grad():
+                sample = torch.tensor(new_data, dtype=torch.float32)
+                output = model(sample)
+                predicted_class = torch.argmax(output, dim=0).item()
+                print(f"Predicted class: {predicted_class}")
+                print(f"Class name: {class_key[str(predicted_class)]}")
+
+def main():
+    global running
+
+    eeg = Thread(target=eeg_detection)
+    eeg.start()
+
+    capture = cv.VideoCapture(0)
+    eye_cascade = cv.CascadeClassifier("models/haarcascade_eye.xml")
+    face_cascade = cv.CascadeClassifier("models/haarcascade_frontalface_default.xml")
+
+    while running:
+        ret, frame = capture.read()
+
+        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
+        for (x, y, w, h) in faces:
+            cv.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0))
+            eye_gray = gray[y:y+h, x:x+w]
+            eye_color = frame[y:y+h, x:x+h]
+
+            eyes = eye_cascade.detectMultiScale(eye_gray)
+            for (ex, ey, ew, eh) in eyes:
+                cv.rectangle(eye_color, (ex, ey), (ex + ew, ey + eh), (0, 0, 255))
+
+                inner_eye_gray = eye_gray[ey:ey + eh, ex:ex + eh]
+                inner_eye_color = eye_color[ey:ey + eh, ex:ex + eh]
+
+                _, thresh = cv.threshold(inner_eye_gray, 70, 255, cv.THRESH_BINARY_INV)
+
+                contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                contours = sorted(contours, key= lambda x: cv.contourArea(x) / ((cv.minEnclosingCircle(x)[1] ** 2) * math.pi), reverse=True)
+
+                if contours:
+                    (cx, cy), radius = cv.minEnclosingCircle(contours[0])
+                    cv.circle(inner_eye_color, (int(cx), int(cy)), int(radius), (0, 255, 0))
+
+        cv.imshow("Frame", frame)
+
+        if cv.waitKey(1) == ord('q'):
+            running = False
+    
+    capture.release()
+    cv.destroyAllWindows()
+    eeg.join()
+
+if __name__ == "__main__":
+    main()
