@@ -7,8 +7,10 @@ import torch.nn.functional as F
 from time import sleep
 from threading import Thread
 import sys
-import math
 import cv2 as cv
+import dlib
+import numpy as np
+import math
 
 if len(sys.argv) > 1:
     version: bool = sys.argv[1] == "0"
@@ -111,35 +113,56 @@ def main():
     eeg.start()
 
     capture = cv.VideoCapture(0)
-    eye_cascade = cv.CascadeClassifier("models/haarcascade_eye.xml")
-    face_cascade = cv.CascadeClassifier("models/haarcascade_frontalface_default.xml")
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor("models/shape_predictor_68_face_landmarks.dat")
 
     while running:
         ret, frame = capture.read()
-
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-        for (x, y, w, h) in faces:
-            cv.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0))
-            eye_gray = gray[y:y+h, x:x+w]
-            eye_color = frame[y:y+h, x:x+h]
-
-            eyes = eye_cascade.detectMultiScale(eye_gray)
-            for (ex, ey, ew, eh) in eyes:
-                cv.rectangle(eye_color, (ex, ey), (ex + ew, ey + eh), (0, 0, 255))
-
-                inner_eye_gray = eye_gray[ey:ey + eh, ex:ex + eh]
-                inner_eye_color = eye_color[ey:ey + eh, ex:ex + eh]
-
-                _, thresh = cv.threshold(inner_eye_gray, 70, 255, cv.THRESH_BINARY_INV)
-
-                contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-                contours = sorted(contours, key= lambda x: cv.contourArea(x) / ((cv.minEnclosingCircle(x)[1] ** 2) * math.pi), reverse=True)
+        faces = detector(gray)
+        for face in faces:
+            landmarks = predictor(gray, face)            
+            left_eye = []
+            right_eye = []
+    
+            for n in range(36, 42):
+                x = landmarks.part(n).x
+                y = landmarks.part(n).y
+                left_eye.append((x, y))
+                cv.circle(frame, (x, y), 2, (0, 255, 0), -1)        
+            for n in range(42, 48):
+                x = landmarks.part(n).x
+                y = landmarks.part(n).y
+                right_eye.append((x, y))
+                cv.circle(frame, (x, y), 2, (0, 255, 0), -1)
+            
+            left_eye = np.array(left_eye)
+            right_eye = np.array(right_eye)
+            
+            height, width = frame.shape[:2]
+            mask = np.zeros((height, width), np.uint8)
+            
+            cv.fillPoly(mask, [left_eye], 255)
+            cv.fillPoly(mask, [right_eye], 255)
+            
+            eyes = cv.bitwise_and(gray, gray, mask=mask)
+            
+            for eye in [left_eye, right_eye]:
+                x_min = np.min(eye[:, 0])
+                x_max = np.max(eye[:, 0])
+                y_min = np.min(eye[:, 1])
+                y_max = np.max(eye[:, 1])
+                
+                eye_region = eyes[y_min:y_max, x_min:x_max]
+                
+                _, threshold_eye = cv.threshold(eye_region, 70, 255, cv.THRESH_BINARY_INV)
+                contours, _ = cv.findContours(threshold_eye, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                contours = sorted(contours, key= lambda x: cv.contourArea(x), reverse=True)
 
                 if contours:
-                    (cx, cy), radius = cv.minEnclosingCircle(contours[0])
-                    cv.circle(inner_eye_color, (int(cx), int(cy)), int(radius), (0, 255, 0))
+                    x, y, w, h = cv.boundingRect(contours[0])
+                    cv.rectangle(frame, (x_min + x, y_min + y), (x_min + x + w, y_min + y + h), (255, 0, 0), 2)
 
         cv.imshow("Frame", frame)
 
