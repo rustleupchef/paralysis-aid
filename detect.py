@@ -10,7 +10,6 @@ import sys
 import cv2 as cv
 import dlib
 import numpy as np
-import math
 
 if len(sys.argv) > 1:
     version: bool = sys.argv[1] == "0"
@@ -163,6 +162,22 @@ def main():
                 if contours:
                     x, y, w, h = cv.boundingRect(contours[0])
                     cv.rectangle(frame, (x_min + x, y_min + y), (x_min + x + w, y_min + y + h), (255, 0, 0), 2)
+                    diff_x1 = x_max - (x_min + x + w)
+                    diff_x2 = (x_min + x) - x_min
+                    diff_y1 = y_max - (y_min + y + h)
+                    diff_y2 = (y_min + y) - y_min
+                    
+                    if diff_x1 > diff_x2:
+                        horiz_pos = "LEFT"
+                    else:
+                        horiz_pos = "RIGHT"
+                    
+                    if diff_y1 > diff_y2:
+                        vert_pos = "UP"
+                    else:
+                        vert_pos = "DOWN"
+
+                    cv.putText(frame, f"{horiz_pos}-{vert_pos}", (x_min + x + w, y_min + y + h), cv.FONT_HERSHEY_SIMPLEX, 0.2, (0, 255, 255), 1)
 
         cv.imshow("Frame", frame)
 
