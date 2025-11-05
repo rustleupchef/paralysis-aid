@@ -194,8 +194,13 @@ def main():
                     diff_y1 = y_max - (y_min + y + h)
                     diff_y2 = (y_min + y) - y_min
                     
-                    horiz_pos = "LEFT" if diff_x1 > diff_x2 else "RIGHT"
-                    vert_pos = "UP" if diff_y1 > diff_y2 else "DOWN"
+                    horiz_pos = "CENTER"
+                    if w/abs(x_max - x_min) < 0.8:
+                        horiz_pos = "LEFT" if diff_x1 > diff_x2 else "RIGHT"
+                    
+                    vert_pos = "CENTER"
+                    if h/abs(y_max - y_min) < 0.8:
+                        vert_pos = "UP" if diff_y1 > diff_y2 else "DOWN"
 
                     cv.putText(frame, f"{horiz_pos}-{vert_pos}", (x_min + x + w, y_min + y + h), cv.FONT_HERSHEY_SIMPLEX, 0.2, (0, 255, 255), 1)
                     if previousSize == 0 or w * h < previousSize:
