@@ -78,7 +78,19 @@ def grab(rest, divisions) -> list[any]:
         sleep(float(rest)/float(divisions))
     return responses
 
+def check_url_connectivity(url):
+    try:
+        response = requests.head(url, timeout=5)
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        return False
+
+
 def eeg_detection():
+
+    if not check_url_connectivity(url):
+        return
+
     while running:
         response = grab(rest=duration, divisions=divisions)
 
@@ -124,6 +136,13 @@ def main():
             landmarks = predictor(gray, face)            
             left_eye = []
             right_eye = []
+            mouth = []
+
+            for n in range(48, 60):
+                x = landmarks.part(n).x
+                y = landmarks.part(n).y
+                mouth.append((x, y))
+                cv.circle(frame, (x, y), 2, (0, 0, 255), -1)
     
             for n in range(36, 42):
                 x = landmarks.part(n).x
@@ -146,12 +165,20 @@ def main():
             cv.fillPoly(mask, [right_eye], 255)
             
             eyes = cv.bitwise_and(gray, gray, mask=mask)
+
+            previousSize = frame.shape[0] * frame.shape[1]
+            dir = ""
+            squint: list[bool] = []
             
             for eye in [left_eye, right_eye]:
                 x_min = np.min(eye[:, 0])
                 x_max = np.max(eye[:, 0])
                 y_min = np.min(eye[:, 1])
                 y_max = np.max(eye[:, 1])
+
+                if abs(x_max-x_min)/abs(y_max-y_min) > 3.9:
+                    squint.append(True)
+                    cv.putText(frame, "SQUINT", (x_min, y_min - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 
                 eye_region = eyes[y_min:y_max, x_min:x_max]
                 
@@ -167,17 +194,14 @@ def main():
                     diff_y1 = y_max - (y_min + y + h)
                     diff_y2 = (y_min + y) - y_min
                     
-                    if diff_x1 > diff_x2:
-                        horiz_pos = "LEFT"
-                    else:
-                        horiz_pos = "RIGHT"
-                    
-                    if diff_y1 > diff_y2:
-                        vert_pos = "UP"
-                    else:
-                        vert_pos = "DOWN"
+                    horiz_pos = "LEFT" if diff_x1 > diff_x2 else "RIGHT"
+                    vert_pos = "UP" if diff_y1 > diff_y2 else "DOWN"
 
                     cv.putText(frame, f"{horiz_pos}-{vert_pos}", (x_min + x + w, y_min + y + h), cv.FONT_HERSHEY_SIMPLEX, 0.2, (0, 255, 255), 1)
+                    if previousSize == 0 or w * h < previousSize:
+                        previousSize = w * h
+                        dir = f"{horiz_pos}-{vert_pos}"
+            print(f"{dir=}\t{squint=}")
 
         cv.imshow("Frame", frame)
 
