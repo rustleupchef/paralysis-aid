@@ -137,12 +137,13 @@ def main():
             left_eye = []
             right_eye = []
             mouth = []
+            MARKS = [0, 3, 6, 9]
 
             for n in range(48, 60):
                 x = landmarks.part(n).x
                 y = landmarks.part(n).y
                 mouth.append((x, y))
-                cv.circle(frame, (x, y), 2, (0, 0, 255), -1)
+                cv.circle(frame, (x, y), 2, (0, 255 if n-48 in MARKS else 0, 0 if n-48 in MARKS else 255), -1)
     
             for n in range(36, 42):
                 x = landmarks.part(n).x
@@ -169,6 +170,8 @@ def main():
             previousSize = frame.shape[0] * frame.shape[1]
             dir = ""
             squint: list[bool] = []
+            smirk: list[bool] = []
+            open_mouth = False
             
             for eye in [left_eye, right_eye]:
                 x_min = np.min(eye[:, 0])
@@ -176,8 +179,8 @@ def main():
                 y_min = np.min(eye[:, 1])
                 y_max = np.max(eye[:, 1])
 
+                squint.append(abs(x_max-x_min)/abs(y_max-y_min) > 3.9)
                 if abs(x_max-x_min)/abs(y_max-y_min) > 3.9:
-                    squint.append(True)
                     cv.putText(frame, "SQUINT", (x_min, y_min - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 
                 eye_region = eyes[y_min:y_max, x_min:x_max]
@@ -206,7 +209,33 @@ def main():
                     if previousSize == 0 or w * h < previousSize:
                         previousSize = w * h
                         dir = f"{horiz_pos}-{vert_pos}"
-            print(f"{dir=}\t{squint=}")
+
+            mid_mouth_x = mouth[MARKS[1]][0]
+
+            min_eye_x = np.min(left_eye[:, 0]) - mid_mouth_x
+            max_eye_x = np.max(right_eye[:, 0]) - mid_mouth_x
+
+            min_mouth_x = mouth[MARKS[0]][0] - mid_mouth_x
+            max_mouth_x = mouth[MARKS[2]][0] - mid_mouth_x
+
+            smirk.append(min_mouth_x/min_eye_x > 0.67)
+            smirk.append(max_mouth_x/max_eye_x > 0.67)
+            if min_mouth_x/min_eye_x > 0.67:
+                left_mouth_point = mouth[MARKS[0]]
+                cv.putText(frame, "Left Smirk", (left_mouth_point[0], left_mouth_point[1]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+            
+            if max_mouth_x/max_eye_x > 0.67:
+                right_mouth_point = mouth[MARKS[2]]
+                cv.putText(frame, "Right Smirk", (right_mouth_point[0], right_mouth_point[1]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+
+            min_mouth_y = mouth[MARKS[3]][1]
+            max_mouth_y = mouth[MARKS[1]][1]
+
+            if abs(max_mouth_y - min_mouth_y)/abs(max_eye_x - min_eye_x) > 0.41:
+                open_mouth = True
+                cv.putText(frame, "Mouth Open", (mouth[MARKS[1]][0], mouth[MARKS[1]][1] + 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+
+            print(f"{dir=}\t{squint=}\t{smirk=}\t{open_mouth=}")
 
         cv.imshow("Frame", frame)
 
