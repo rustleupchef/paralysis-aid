@@ -105,6 +105,7 @@ def eeg_detection():
                 predicted_class = torch.argmax(output, dim=1).item()
                 print(f"Predicted class: {predicted_class}")
                 print(f"Class name: {class_key[str(predicted_class)]}")
+                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)]})
                 sleep(duration)
         else:
             print(response)
@@ -116,6 +117,7 @@ def eeg_detection():
                 predicted_class = torch.argmax(output, dim=0).item()
                 print(f"Predicted class: {predicted_class}")
                 print(f"Class name: {class_key[str(predicted_class)]}")
+                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)]})
 
 def main():
     global running
@@ -235,7 +237,14 @@ def main():
                 open_mouth = True
                 cv.putText(frame, "Mouth Open", (mouth[MARKS[1]][0], mouth[MARKS[1]][1] + 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
-            print(f"{dir=}\t{squint=}\t{smirk=}\t{open_mouth=}")
+            data = {
+                "dir": dir,
+                "squint": [str(s) for s in squint],
+                "smirk": [str(s) for s in smirk],
+                "open_mouth": open_mouth
+            }
+            response = requests.post("http://localhost:3000/mindwave/cv", json=data)
+            print(response.text)
 
         cv.imshow("Frame", frame)
 

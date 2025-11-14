@@ -8,6 +8,14 @@ let latestMindwaveData = {
   blink: null
 };
 
+let latestDetection = {
+  dir: null,
+  squint: null,
+  smirk: null,
+  open_mouth: null,
+  eeg_class: null
+};
+
 const server = http.createServer((req, res) => {
   if (req.url === '/mindwave/data' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -32,9 +40,50 @@ const server = http.createServer((req, res) => {
     console.log(text);
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(text);
+  } else if (req.url === "/mindwave/cv" && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        latestDetection = {
+          dir: data.dir,
+          squint: data.squint,
+          smirk: data.smirk,
+          open_mouth: data.open_mouth,
+          eeg_class: latestDetection.eeg_class
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'success' }));
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', message: 'Invalid JSON' }));
+      }
+    });
+  } else if (req.url === '/mindwave/eeg' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        latestDetection.eeg_class = data.eeg_class;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'success' }));
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', message: 'Invalid JSON' }));
+      }
+    });
+  } else if (req.url === '/mindwave/detection' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(latestDetection));
   } else {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Mindwave server is running\n');
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'error', message: 'Not Found' }));
   }
 });
 
