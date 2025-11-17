@@ -1,5 +1,7 @@
 const Mindwave = require('mindwave');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 let latestMindwaveData = {
   eeg: null,
@@ -81,6 +83,18 @@ const server = http.createServer((req, res) => {
   } else if (req.url === '/mindwave/detection' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(latestDetection));
+  } else if (req.url === "/mindwave/display" && req.method === "GET") {
+    const filePath = path.join(__dirname, "results.html");
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(500, {'Content-type': 'text/plain'});
+        res.end("Error loading content");
+        return;
+      }
+
+      res.writeHead(200, { 'Content-type' : "text/html" });
+      res.end(data);
+    });
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'error', message: 'Not Found' }));

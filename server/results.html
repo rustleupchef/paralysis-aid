@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Results</title>
+    </head>
+    <body>
+        <div id="Dir"></div>
+        <div id="Squint"></div>
+        <div id="Smirk"></div>
+        <div id="Open"></div>
+        <div id="EEG"></div>
+
+        <script>
+            function load() {
+                const dir = document.getElementById("Dir");
+                const squint = document.getElementById("Squint");
+                const smirk = document.getElementById("Smirk");
+                const open = document.getElementById("Open");
+                const eeg = document.getElementById("EEG");
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", "/mindwave/detection");
+                xhr.onload = function() {
+                    if (xhr.status === 200 && xhr.readyState === 4) {
+                        const obj = JSON.parse(xhr.responseText);
+
+                        dir.innerText = obj.dir;
+                        squint.innerText = obj.squint;
+                        smirk.innerText = obj.smirk;
+                        open.innerText = obj.open_mouth;
+                        eeg.innerText = obj.eeg_class;
+
+                        console.log("It happened");
+                    }
+                };
+                xhr.send();
+            }
+            setInterval(load, 200);
+        </script>
+    </body>
+</html>
