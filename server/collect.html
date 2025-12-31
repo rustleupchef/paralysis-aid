@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Collect</title>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    </head>
+    <body>
+        <div id="ClassName" style="display: flex; position: absolute; left: 0; top: 0; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column;"></div>
+
+        <script>
+            window.onload = function () {
+                const classNameDiv = document.getElementById("ClassName");
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/collect");
+                xhr.onload = function() {
+                    if (xhr.status === 200 && xhr.readyState === 4) {
+                        const obj = JSON.parse(xhr.responseText);
+                        for (let i = 0; i < 10; i++) {
+                            const h4 = document.createElement("h4");
+                            h4.innerText = obj.class_name;
+                            classNameDiv.appendChild(h4);
+                        }
+                    }
+                };
+                xhr.send();
+            }
+        </script>
+    </body>
+</html>

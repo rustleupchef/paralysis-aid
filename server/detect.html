@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Detect</title>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    </head>
+    <body>
+        <div style="display: flex; position: absolute; left: 0; top: 0; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column;"></div>
+        <script>
+            window.onload = function() {
+                const containerDiv = document.querySelector("div");
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/detect");
+                xhr.onload = function() {
+                    if (xhr.status === 200 && xhr.readyState === 4) {
+                        const classes = JSON.parse(xhr.responseText).classes;
+                        for (let i = 0; i < 10; i++) {
+                            const innerDiv = document.createElement("div");
+                            innerDiv.style.display = "flex";
+                            innerDiv.style.width = "100%";
+                            innerDiv.style.justifyContent = "center";
+                            innerDiv.style.alignItems = "center";
+                            innerDiv.style.flexDirection = "row";
+                            classes.forEach(element => {
+                                const h4 = document.createElement("h4");
+                                h4.style.margin = "0";
+                                h4.style.padding = "2vw";
+                                h4.style.textAlign = "center";
+                                h4.innerText = element;
+                                innerDiv.appendChild(h4);
+                            });
+                            containerDiv.appendChild(innerDiv);
+                        }
+                    }
+                };
+                xhr.send();
+            }
+        </script>
+    </body>
+</html>
