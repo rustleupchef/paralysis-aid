@@ -1,0 +1,12 @@
+{
+    "squint" : 3.9,
+    "eye_vertical" : 0.8,
+    "eye_horizontal" : 0.8,
+    "left_smirk" : 0.67,
+    "right_smirk" : 0.67,
+    "mouth_open" : 0.41,
+    "eye_contour" : [
+        70,
+        255
+    ]
+}

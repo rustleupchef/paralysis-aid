@@ -71,6 +71,17 @@ with open("Classes/Formatted/Key.json", "r") as f:
     duration: int = key["duration"]
     divisions: int = key["divisions"]
 
+with open("parameters.json", "r") as f:
+    parameters = json.load(f)
+    squint_thresh = parameters["squint"]
+    eye_vertical_thresh = parameters["eye_vertical"]
+    eye_horizontal_thresh = parameters["eye_horizontal"]
+    left_smirk_thresh = parameters["left_smirk"]
+    right_smirk_thresh = parameters["right_smirk"]
+    mouth_open_thresh = parameters["mouth_open"]
+    eye_contour_thresh = parameters["eye_contour"]
+    
+
 def grab(rest, divisions) -> list[any]:
     responses = []
     for i in range(divisions):
@@ -181,13 +192,13 @@ def main():
                 y_min = np.min(eye[:, 1])
                 y_max = np.max(eye[:, 1])
 
-                squint.append(abs(x_max-x_min)/abs(y_max-y_min) > 3.9)
-                if abs(x_max-x_min)/abs(y_max-y_min) > 3.9:
+                squint.append(abs(x_max-x_min)/abs(y_max-y_min) > squint_thresh)
+                if abs(x_max-x_min)/abs(y_max-y_min) > squint_thresh:
                     cv.putText(frame, "SQUINT", (x_min, y_min - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 
                 eye_region = eyes[y_min:y_max, x_min:x_max]
                 
-                _, threshold_eye = cv.threshold(eye_region, 70, 255, cv.THRESH_BINARY_INV)
+                _, threshold_eye = cv.threshold(eye_region, eye_contour_thresh[0], eye_contour_thresh[1], cv.THRESH_BINARY_INV)
                 contours, _ = cv.findContours(threshold_eye, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
                 contours = sorted(contours, key= lambda x: cv.contourArea(x), reverse=True)
 
@@ -200,11 +211,11 @@ def main():
                     diff_y2 = (y_min + y) - y_min
                     
                     horiz_pos = "CENTER"
-                    if w/abs(x_max - x_min) < 0.8:
+                    if w/abs(x_max - x_min) < eye_horizontal_thresh:
                         horiz_pos = "LEFT" if diff_x1 > diff_x2 else "RIGHT"
                     
                     vert_pos = "CENTER"
-                    if h/abs(y_max - y_min) < 0.8:
+                    if h/abs(y_max - y_min) < eye_vertical_thresh:
                         vert_pos = "UP" if diff_y1 > diff_y2 else "DOWN"
 
                     cv.putText(frame, f"{horiz_pos}-{vert_pos}", (x_min + x + w, y_min + y + h), cv.FONT_HERSHEY_SIMPLEX, 0.2, (0, 255, 255), 1)
@@ -220,20 +231,20 @@ def main():
             min_mouth_x = mouth[MARKS[0]][0] - mid_mouth_x
             max_mouth_x = mouth[MARKS[2]][0] - mid_mouth_x
 
-            smirk.append(min_mouth_x/min_eye_x > 0.67)
-            smirk.append(max_mouth_x/max_eye_x > 0.67)
-            if min_mouth_x/min_eye_x > 0.67:
+            smirk.append(min_mouth_x/min_eye_x > left_smirk_thresh)
+            smirk.append(max_mouth_x/max_eye_x > right_smirk_thresh)
+            if min_mouth_x/min_eye_x > left_smirk_thresh:
                 left_mouth_point = mouth[MARKS[0]]
                 cv.putText(frame, "Left Smirk", (left_mouth_point[0], left_mouth_point[1]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
-            
-            if max_mouth_x/max_eye_x > 0.67:
+
+            if max_mouth_x/max_eye_x > right_smirk_thresh:
                 right_mouth_point = mouth[MARKS[2]]
                 cv.putText(frame, "Right Smirk", (right_mouth_point[0], right_mouth_point[1]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
 
             min_mouth_y = mouth[MARKS[3]][1]
             max_mouth_y = mouth[MARKS[1]][1]
 
-            if abs(max_mouth_y - min_mouth_y)/abs(max_eye_x - min_eye_x) > 0.41:
+            if abs(max_mouth_y - min_mouth_y)/abs(max_eye_x - min_eye_x) > mouth_open_thresh:
                 open_mouth = True
                 cv.putText(frame, "Mouth Open", (mouth[MARKS[1]][0], mouth[MARKS[1]][1] + 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
