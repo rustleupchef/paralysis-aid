@@ -91,7 +91,7 @@ def grab(rest, divisions) -> list[any]:
 
 def check_url_connectivity(url):
     try:
-        response = requests.head(url, timeout=5)
+        response = requests.get(url, timeout=5)
         return response.status_code == 200
     except requests.exceptions.RequestException as e:
         return False
@@ -100,6 +100,7 @@ def check_url_connectivity(url):
 def eeg_detection():
 
     if not check_url_connectivity(url):
+        print("Cannot connect to EEG data source.")
         return
 
     while running:
