@@ -115,9 +115,11 @@ def eeg_detection():
                 sample = torch.tensor(scaler.transform(sample), dtype=torch.float32)
                 output = model(sample)
                 predicted_class = torch.argmax(output, dim=1).item()
+                probabilities = torch.softmax(output, dim=1)
+                confidence = probabilities[0][predicted_class].item()
                 print(f"Predicted class: {predicted_class}")
                 print(f"Class name: {class_key[str(predicted_class)]}")
-                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)]})
+                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)], "confidence" : confidence})
                 sleep(duration)
         else:
             print(response)
@@ -127,9 +129,11 @@ def eeg_detection():
                 sample = torch.tensor(new_data, dtype=torch.float32)
                 output = model(sample)
                 predicted_class = torch.argmax(output, dim=0).item()
+                probabilities = torch.softmax(output, dim=0)
+                confidence = probabilities[predicted_class].item()
                 print(f"Predicted class: {predicted_class}")
                 print(f"Class name: {class_key[str(predicted_class)]}")
-                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)]})
+                requests.post("http://localhost:3000/mindwave/eeg", json={"eeg_class": class_key[str(predicted_class)], "confidence" : confidence})
 
 def main():
     global running

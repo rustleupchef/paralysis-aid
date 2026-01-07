@@ -9,6 +9,7 @@
         <div id="Smirk"></div>
         <div id="Open"></div>
         <div id="EEG"></div>
+        <div id="Confidence"></div>
 
         <script>
             function load() {
@@ -17,6 +18,7 @@
                 const smirk = document.getElementById("Smirk");
                 const open = document.getElementById("Open");
                 const eeg = document.getElementById("EEG");
+                const confidence = document.getElementById("Confidence");
 
                 const xhr = new XMLHttpRequest();
                 xhr.open("GET", "/mindwave/detection");
@@ -29,7 +31,7 @@
                         smirk.innerText = obj.smirk;
                         open.innerText = obj.open_mouth;
                         eeg.innerText = obj.eeg_class;
-
+                        confidence.innerText = obj.confidence;
                     }
                 };
                 xhr.send();

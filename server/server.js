@@ -15,7 +15,8 @@ let latestDetection = {
     squint: null,
     smirk: null,
     open_mouth: null,
-    eeg_class: null
+    eeg_class: null,
+    confidence: null
 };
 
 const server = http.createServer((req, res) => {
@@ -84,6 +85,7 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 latestDetection.eeg_class = data.eeg_class;
+                latestDetection.confidence = data.confidence;
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'success' }));
             } catch (error) {
