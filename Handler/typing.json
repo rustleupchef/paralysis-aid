@@ -1,0 +1,23 @@
+{
+    "vertical" : [
+        "Looking up",
+        "Looking down"
+    ],
+    "horizontal" : [
+        "Looking left",
+        "Looking right"
+    ],
+    "blink" : [
+        "Left eye blink",
+        "Right eye blink"
+    ],
+    "smirk" : [
+        "Left side smirk",
+        "Right side smirk"
+    ],
+    "mouth" : "Chewing",
+    "eeg" : {
+        "Dog" : "Relaxed",
+        "Cat" : "Concentrating"
+    }
+}
