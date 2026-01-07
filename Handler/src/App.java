@@ -5,8 +5,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.awt.Robot;
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 
 
@@ -133,13 +131,14 @@ public class App {
 
             transferObject transfer = new transferObject(reading, Typing);
             System.out.println(transfer.condense());
-            typeString(robot, transfer.condense());
+            waylandTypeString(transfer.condense());
         }
     }
 
-    public void waylandTypeString(String text) throws InterruptedException {
-        StringSelection selection = new StringSelection(text);
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+    public static void waylandTypeString(String text) throws Exception {
+        Process p = new ProcessBuilder("ydotool", "type", text).start();
+        p.waitFor();
+        Thread.sleep(100);
     }
 
     public static void typeString(Robot robot, String text) throws InterruptedException {
