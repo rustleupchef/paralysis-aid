@@ -259,6 +259,7 @@ def main():
                 "smirk": [str(s) for s in smirk],
                 "open_mouth": open_mouth
             }
+            print(data)
             response = requests.post("http://localhost:3000/mindwave/cv", json=data)
             print(response.text)
 

@@ -2,12 +2,42 @@
 <html>
     <head>
         <title>Results</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                align-content: center;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            div {
+                padding: 10px;
+                margin: 6px;
+                border: 2px solid black;
+                font-size: 24px;
+                text-align: center;
+            }
+
+            #Dir {
+                display: flex;
+                flex-direction: row;
+                align-content: center;
+                justify-content: center;
+            }
+        </style>
     </head>
     <body>
         <div id="Dir"></div>
-        <div id="Squint"></div>
-        <div id="Smirk"></div>
-        <div id="Open"></div>
+        <div id="Squint">
+            <div>Left Squint</div>
+            <div>Right Squint</div>
+        </div>
+        <div id="Smirk">
+            <div>Left Smirk</div>
+            <div>Right Smirk</div>
+        </div>
+        <div id="Open">Mouth Open</div>
         <div id="EEG"></div>
         <div id="Confidence"></div>
 
@@ -26,12 +56,33 @@
                     if (xhr.status === 200 && xhr.readyState === 4) {
                         const obj = JSON.parse(xhr.responseText);
 
-                        dir.innerText = obj.dir;
-                        squint.innerText = obj.squint;
-                        smirk.innerText = obj.smirk;
-                        open.innerText = obj.open_mouth;
+                        dir.replaceChildren();
+                        const dirs = obj.dir.split("-");
+                        const horizontal = document.createElement("div");
+                        const vertical = document.createElement("div");
+                        horizontal.innerText = dirs[0];
+                        vertical.innerText = dirs[1];
+                        dir.appendChild(horizontal);
+                        dir.appendChild(vertical);
+
+                        for (let i = 0; i < 2; i++) {
+                            squint.children[i].style.backgroundColor = obj.squint[i] == "True" ? "lightgreen" : "lightcoral";
+                        }
+
+                        for (let i = 0; i < 2; i++) {
+                            smirk.children[i].style.backgroundColor = obj.smirk[i] == "True" ? "lightgreen" : "lightcoral";
+                        }
+
+                        open.style.backgroundColor = obj.open_mouth ? "lightgreen" : "lightcoral";
                         eeg.innerText = obj.eeg_class;
                         confidence.innerText = obj.confidence;
+                        if (obj.confidence >= 0.75) {
+                            confidence.style.backgroundColor = "lightgreen";
+                        } else if (obj.confidence >= 0.5) {
+                            confidence.style.backgroundColor = "yellow";
+                        } else {
+                            confidence.style.backgroundColor = "lightcoral";
+                        }
                     }
                 };
                 xhr.send();
