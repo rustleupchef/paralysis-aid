@@ -16,17 +16,19 @@ class jsonObject {
     public String[] smirk;
     public boolean open_mouth;
     public String eeg_class;
+    public float confidence;
 
     jsonObject() {
 
     }
 
-    jsonObject (String dir, String[] squint, String[] smirk, boolean open_mouth, String eeg_class) {
+    jsonObject (String dir, String[] squint, String[] smirk, boolean open_mouth, String eeg_class, float confidence) {
         this.dir = dir;
         this.squint = squint;
         this.smirk = smirk;
         this.open_mouth = open_mouth;
         this.eeg_class = eeg_class;
+        this.confidence = confidence;
     }
 }
 
